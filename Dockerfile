@@ -1,26 +1,18 @@
-# Use an official Python runtime as a parent image
-FROM python:3.11-slim
+# Use a base image that has dlib + face_recognition PRE-COMPILED
+# This avoids 8GB+ memory usage during build from compiling dlib from source
+FROM animcogn/face_recognition:cpu
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
-# Install system dependencies required for dlib and opencv-headless
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    cmake \
-    pkg-config \
-    libopenblas-dev \
-    liblapack-dev \
-    && rm -rf /var/lib/apt/lists/*
-
 # Set work directory
 WORKDIR /app
 
-# Install Python dependencies
+# Install only our additional Python dependencies (dlib/face_recognition already installed)
 COPY requirements.txt /app/
-RUN pip install --upgrade pip
-RUN pip install -r requirements.txt
+RUN pip install --upgrade pip --no-cache-dir
+RUN pip install Flask Flask-Cors "pymongo[srv]" certifi python-dotenv opencv-python-headless gunicorn --no-cache-dir
 
 # Copy project
 COPY . /app/
@@ -29,4 +21,4 @@ COPY . /app/
 EXPOSE 5000
 
 # Run gunicorn
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "app:app"]
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--timeout", "120", "--workers", "1", "app:app"]
