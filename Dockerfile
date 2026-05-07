@@ -1,25 +1,37 @@
-# Use a base image that has dlib + face_recognition PRE-COMPILED
-# This avoids 8GB+ memory usage during build from compiling dlib from source
-FROM animcogn/face_recognition:cpu
+# Python 3.9 has a pre-compiled dlib wheel on PyPI (manylinux)
+# This avoids the 8GB RAM compilation issue entirely
+FROM python:3.9-slim
 
-# Set environment variables
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
 
-# Set work directory
+# Only minimal system libs needed at runtime (not for compilation)
+RUN apt-get update && apt-get install -y \
+    libstdc++6 \
+    libgomp1 \
+    && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 
-# Install only our additional Python dependencies (dlib/face_recognition already installed)
-COPY requirements.txt /app/
-RUN pip install --upgrade pip --no-cache-dir
-RUN pip install Flask Flask-Cors "pymongo[srv]" certifi python-dotenv opencv-python-headless gunicorn --no-cache-dir
+RUN pip install --no-cache-dir --upgrade pip
 
-# Copy project
-COPY . /app/
+# Install dlib first — pip will download the pre-built wheel for Python 3.9 Linux
+RUN pip install --no-cache-dir dlib
 
-# Expose port
-EXPOSE 5000
+# Install face_recognition which depends on dlib already being installed
+RUN pip install --no-cache-dir face_recognition
 
-# Run gunicorn
-# Run gunicorn using Render's dynamic PORT environment variable
-CMD ["sh", "-c", "gunicorn --bind 0.0.0.0:${PORT:-5000} --timeout 120 --workers 1 app:app"]
+# Install the rest of the app dependencies
+RUN pip install --no-cache-dir \
+    Flask \
+    Flask-Cors \
+    "pymongo[srv]" \
+    certifi \
+    python-dotenv \
+    opencv-python-headless \
+    gunicorn
+
+COPY . .
+
+# Use Render's PORT env variable
+CMD ["sh", "-c", "gunicorn --bind 0.0.0.0:${PORT:-10000} --timeout 120 --workers 1 app:app"]
