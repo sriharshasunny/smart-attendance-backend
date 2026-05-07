@@ -1,0 +1,11 @@
+Flask
+Flask-Cors
+pymongo[srv]
+certifi
+python-dotenv
+opencv-python
+face_recognition
+numpy
+cmake
+dlib-bin
+gunicorn
