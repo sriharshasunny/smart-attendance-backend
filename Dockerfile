@@ -1,27 +1,18 @@
-# Python 3.9 has a pre-compiled dlib wheel on PyPI (manylinux)
-# This avoids the 8GB RAM compilation issue entirely
-FROM python:3.9-slim
+# Use miniconda3 - conda has pre-compiled dlib binaries (no compilation needed!)
+FROM continuumio/miniconda3:latest
 
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
-# Only minimal system libs needed at runtime (not for compilation)
-RUN apt-get update && apt-get install -y \
-    libstdc++6 \
-    libgomp1 \
-    && rm -rf /var/lib/apt/lists/*
-
 WORKDIR /app
 
-RUN pip install --no-cache-dir --upgrade pip
+# Install dlib via conda - guaranteed pre-compiled binary, ZERO compilation
+RUN conda install -c conda-forge dlib -y && conda clean -afy
 
-# Install dlib first — pip will download the pre-built wheel for Python 3.9 Linux
-RUN pip install --no-cache-dir dlib
-
-# Install face_recognition which depends on dlib already being installed
+# Install face_recognition via pip (dlib is already installed by conda above)
 RUN pip install --no-cache-dir face_recognition
 
-# Install the rest of the app dependencies
+# Install app dependencies
 RUN pip install --no-cache-dir \
     Flask \
     Flask-Cors \
@@ -35,3 +26,4 @@ COPY . .
 
 # Use Render's PORT env variable
 CMD ["sh", "-c", "gunicorn --bind 0.0.0.0:${PORT:-10000} --timeout 120 --workers 1 app:app"]
+
