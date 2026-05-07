@@ -5,16 +5,13 @@ FROM python:3.11-slim
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
-# Install system dependencies required for dlib and opencv
+# Install system dependencies required for dlib and opencv-headless
 RUN apt-get update && apt-get install -y \
     build-essential \
     cmake \
     pkg-config \
-    libx11-dev \
-    libatlas-base-dev \
-    libgtk-3-dev \
-    libboost-python-dev \
-    libgl1-mesa-glx \
+    libopenblas-dev \
+    liblapack-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Set work directory
