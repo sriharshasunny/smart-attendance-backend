@@ -7,3 +7,4 @@ opencv-python-headless
 gunicorn
 face_recognition
 numpy
+git+https://github.com/ageitgey/face_recognition_models
