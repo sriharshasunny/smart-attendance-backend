@@ -7,7 +7,7 @@ ENV PYTHONUNBUFFERED=1
 WORKDIR /app
 
 # Install dlib via conda - guaranteed pre-compiled binary, ZERO compilation
-RUN conda install -c conda-forge dlib -y && conda clean -afy
+RUN CONDA_NO_PLUGINS=true conda install -c conda-forge dlib -y && conda clean -afy
 
 # Copy requirements first to leverage Docker cache
 COPY requirements.txt .
