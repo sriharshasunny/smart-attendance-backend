@@ -5,3 +5,5 @@ certifi
 python-dotenv
 opencv-python-headless
 gunicorn
+face_recognition
+numpy

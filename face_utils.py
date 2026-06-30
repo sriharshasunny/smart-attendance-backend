@@ -13,6 +13,8 @@ def get_encoding_from_image(file_bytes, robust=True):
     np_arr = np.frombuffer(file_bytes, np.uint8)
     # Decode image
     img = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+    if img is None:
+        return None
     # Convert to RGB as face_recognition expects RGB
     rgb_img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     
