@@ -6,8 +6,8 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
-# Install dlib via conda - guaranteed pre-compiled binary, ZERO compilation
-RUN CONDA_NO_PLUGINS=true conda install --solver classic -c conda-forge dlib -y && conda clean -afy
+# Install python 3.10 and dlib via conda - guaranteed pre-compiled binary, ZERO compilation
+RUN CONDA_NO_PLUGINS=true conda install --solver classic -c conda-forge python=3.10 dlib -y && conda clean -afy
 
 # Copy requirements first to leverage Docker cache
 COPY requirements.txt .
