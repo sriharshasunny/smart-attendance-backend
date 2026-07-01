@@ -24,10 +24,10 @@ def get_encoding_from_image(file_bytes, robust=True):
         # num_jitters=5 adds robustness while still being fast enough for CPU-only instances
         encodings = face_recognition.face_encodings(rgb_img, known_face_locations=face_locations, num_jitters=5)
     else:
-        # Standard HOG model for faster live attendance scanning
+        # High accuracy CNN model for registration (robust to side profiles/changes)
         face_locations = face_recognition.face_locations(rgb_img, model="hog")
-        # slight jitter for better live accuracy
-        encodings = face_recognition.face_encodings(rgb_img, known_face_locations=face_locations, num_jitters=2)
+        # num_jitters=5 adds robustness by resampling the face multiple times
+        encodings = face_recognition.face_encodings(rgb_img, known_face_locations=face_locations, num_jitters=5)
         
     if len(encodings) > 0:
         return encodings[0]

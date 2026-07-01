@@ -19,8 +19,11 @@ except:
 # Helper: resolve class name from class_id
 # ---------------------------------------------------------------------------
 def _class_name_map():
-    classes = list(db.classes.find({}, {"_id": 1, "name": 1}))
-    return {str(c["_id"]): c.get("name", "—") for c in classes}
+    classes = list(db.classes.find({}, {"_id": 1, "name": 1, "department": 1, "section": 1}))
+    return {
+        str(c["_id"]): f"{c.get('name', '—')}{' - ' + c.get('department') if c.get('department') else ''}{' (' + c.get('section') + ')' if c.get('section') else ''}"
+        for c in classes
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -240,6 +243,7 @@ def delete_user(id):
 def mark_attendance():
     data = request.json
     base64_image = data.get('image')
+    class_id = data.get('class_id')
 
     if not base64_image:
         return jsonify({'error': 'No image provided'}), 400
@@ -248,9 +252,13 @@ def mark_attendance():
     if face_encoding is None:
         return jsonify({'error': 'No face detected in frame'}), 400
 
-    users = list(db.users.find({"face_encoding": {"$ne": None}}))
+    query = {"face_encoding": {"$ne": None}}
+    if class_id:
+        query["class_id"] = class_id
+
+    users = list(db.users.find(query))
     if not users:
-        return jsonify({'error': 'No users with registered faces found in database'}), 404
+        return jsonify({'error': 'No users with registered faces found in database for this filter'}), 404
 
     known_encodings = [face_utils.string_to_encoding(u['face_encoding']) for u in users]
 
