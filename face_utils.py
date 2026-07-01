@@ -21,13 +21,13 @@ def get_encoding_from_image(file_bytes, robust=True):
     if robust:
         # Using HOG model instead of CNN. CNN requires 1GB+ RAM and causes OOM crashes on Render's 512MB free tier.
         face_locations = face_recognition.face_locations(rgb_img, model="hog")
-        # num_jitters=5 adds robustness while still being fast enough for CPU-only instances
-        encodings = face_recognition.face_encodings(rgb_img, known_face_locations=face_locations, num_jitters=5)
+        # num_jitters=2 adds slight robustness for registration while keeping it fast
+        encodings = face_recognition.face_encodings(rgb_img, known_face_locations=face_locations, num_jitters=2)
     else:
-        # High accuracy CNN model for registration (robust to side profiles/changes)
+        # Standard HOG model for faster live attendance scanning
         face_locations = face_recognition.face_locations(rgb_img, model="hog")
-        # num_jitters=5 adds robustness by resampling the face multiple times
-        encodings = face_recognition.face_encodings(rgb_img, known_face_locations=face_locations, num_jitters=5)
+        # num_jitters=1 (default) makes scanning incredibly fast
+        encodings = face_recognition.face_encodings(rgb_img, known_face_locations=face_locations, num_jitters=1)
         
     if len(encodings) > 0:
         return encodings[0]
