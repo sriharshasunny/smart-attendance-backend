@@ -11,6 +11,9 @@ api = Blueprint('api', __name__)
 # Ensure unique index on user_id and date for attendance
 try:
     db.attendance.create_index([("user_id", 1), ("date", 1)], unique=True)
+    db.users.create_index([("class_id", 1)])
+    db.users.create_index([("roll_number", 1)])
+    db.users.create_index([("role", 1)])
 except:
     pass
 
@@ -25,6 +28,21 @@ def _class_name_map():
         for c in classes
     }
 
+
+# ---------------------------------------------------------------------------
+# AUTHENTICATION
+# ---------------------------------------------------------------------------
+@api.route('/login', methods=['POST'])
+def login():
+    data = request.json or {}
+    phone = data.get('phone', '').strip()
+    password = data.get('password', '').strip()
+    
+    # Hardcoded admin credentials based on user request
+    if phone == '6281871173' and password == 'admin':
+        return jsonify({'message': 'Login successful', 'token': 'admin-dummy-token'}), 200
+        
+    return jsonify({'error': 'Invalid credentials'}), 401
 
 # ---------------------------------------------------------------------------
 # DASHBOARD
@@ -237,8 +255,51 @@ def delete_user(id):
 
 
 # ---------------------------------------------------------------------------
-# ATTENDANCE — MARK (Live face recognition)
+# ATTENDANCE — MARK (Live face recognition & Manual)
 # ---------------------------------------------------------------------------
+@api.route('/attendance/manual', methods=['POST'])
+def mark_attendance_manual():
+    data = request.json or {}
+    roll_number = data.get('roll_number', '').strip()
+    class_id = data.get('class_id', '').strip()
+    
+    if not roll_number:
+        return jsonify({'error': 'Roll number is required'}), 400
+        
+    query = {'roll_number': {'$regex': f"^{roll_number}$", '$options': 'i'}}
+    if class_id:
+        query['class_id'] = class_id
+        
+    user = db.users.find_one(query)
+    if not user:
+        return jsonify({'error': 'Student not found with this roll number'}), 404
+        
+    today = datetime.utcnow().strftime('%Y-%m-%d')
+    timestamp = datetime.utcnow()
+
+    existing = db.attendance.find_one({'user_id': str(user['_id']), 'date': today})
+    if existing:
+        return jsonify({
+            'message': f'Attendance already marked for {user.get("name")} today.',
+            'user': {'name': user.get('name'), 'role': user.get('role'), 'roll_number': user.get('roll_number')}
+        }), 200
+
+    new_attendance = {
+        'user_id': str(user['_id']),
+        'date': today,
+        'timestamp': timestamp,
+        'status': 'Present'
+    }
+
+    try:
+        db.attendance.insert_one(new_attendance)
+        return jsonify({
+            'message': f'Attendance marked manually for {user.get("name")}.',
+            'user': {'name': user.get('name'), 'role': user.get('role'), 'roll_number': user.get('roll_number')}
+        }), 201
+    except DuplicateKeyError:
+        return jsonify({'error': 'Attendance already recorded.'}), 400
+
 @api.route('/attendance/mark', methods=['POST'])
 def mark_attendance():
     data = request.json
